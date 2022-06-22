@@ -1,97 +1,95 @@
-let operacionesArchivo = require('./helpers/operacionesArchivo.js');
-
+let operacionesArchivo = require("./helpers/operacionesArchivo.js");
 
 let concesionaria = {
   autos: operacionesArchivo.leerArchivoJson(),
 
-  listar: function() {
-      // cuando se llama a este metodo se imprimen todos los autos en autos.json
-      console.log(this.autos);
+  listar: function () {
+    console.log('Autos: \n', this.autos);
   },
 
-  buscarAuto: function(patenteBuscada) {
-    // cuando se llama a este metodo se imprimen todos los datos del auto con la patente inresada. Sino esta, devuelve null
-    console.log('========================')
-    console.log('Buscando el auto de patente '+patenteBuscada)
-    console.log('========================')
-    autoBuscado = this.autos.filter(auto => auto.patente === patenteBuscada)[0];
-    return autoBuscado != undefined ? autoBuscado : null;
+  buscarAuto: function (patenteBuscada) {
+    autoBuscado = this.autos.filter(
+      (auto) => auto?.patente === patenteBuscada
+    )[0];
+    if(autoBuscado != undefined){
+      console.log("Auto encontrado: ", autoBuscado)
+      return autoBuscado;
+    }else{
+      console.log("No se encontró ningún auto de patente: ", patenteBuscada);
+      return null;
+    }
   },
 
-  venderAuto: function(patenteBuscada) {
-    // cuando se llama a este metodo se sobrescribe el objeto de autos, cambiando este auto en particular a vendido
+  venderAuto: function (patenteBuscada) {
     let autoVendido = this.buscarAuto(patenteBuscada);
-    autos = this.autos.map(function(auto){
-      if (auto.patente == patenteBuscada){
+    autos = this.autos.map(function (auto) {
+      if (auto?.patente == patenteBuscada) {
         auto.vendido = true;
         return auto;
       } else {
-        return auto;
+        return null;
       }
-    })
-    if(autoVendido !== null){
-      operacionesArchivo.grabarUnJson(JSON.stringify(autos));
-      console.log('Felicitaciones, auto vendido!');
-    }else{
-      console.log('Lo sentimos, no encontramos un auto con esa patente');
-    }
-  },
-
-  autosParaLaVenta: function() {
-    // cuando se llama a este metodo se imprimen todos los autos en autos.json que su estado vendido es false
-    console.log('========================')
-    console.log('Estos autos estan en venta:')
-    console.log('========================')
-    return this.autos.filter(auto => auto.vendido == false)
-  },
-
-  autosNuevos: function() {
-    // cuando se llama a este metodo se imprimen todos los autos en autos.json que su estado vendido es false y sus km son cero
-    // para determinar cuales no estan vendidos se aprovecha como callback del metodo anterior.
-    console.log('========================')
-    console.log('Estos autos estan en venta y son 0km:')
-    console.log('========================')
-    return this.autosParaLaVenta().filter(auto => auto.km == 0)
-  },
-
-  listaDeVentas: function() {
-    // cuando se llama a este metodo se imprime un array de precios de autos cuyo estado vendido es true
-    let autosVendidos = this.autos.filter(auto => auto.vendido == true);
-    var ventas = []
-    autosVendidos.forEach(function(auto){
-      ventas.push(auto.precio);
     });
-    return ventas;
+    if (autoVendido !== null) {
+      operacionesArchivo.grabarUnJson(JSON.stringify(autos));
+      console.log("Felicitaciones, el auto ha sido vendido!");
+    } 
+    return;
   },
 
-  totalDeVentas: function() {
-    // cuando se llama a este se suman los precios de todos los autos vendidos
-    // los precios de los autos vendidos se los trae usando como callback el metodo anterior
-    let ventas = this.listaDeVentas();
-    if (ventas.length > 0){
-      return ventas.reduce((a, b) => a + b, 0)
-    } else {
-      return 0;
+  autosParaLaVenta: function () {
+    console.log("Estos autos están en venta:");
+    const resultado = this.autos.filter((auto) => auto.vendido == false);
+    console.log(resultado);
+  },
+
+  autosNuevos: function () {
+    const autosEncontrados = this.autos.filter(auto => auto?.km == 0);
+    if(autosEncontrados.length){
+      return console.log("Autos 0km: \n",autosEncontrados);
+    }else{
+      console.log("Lo sentimos, no encontramos autos 0km");
     }
   },
 
-  puedeComprar: function(auto, persona){
-    // este metodo recibe un objeto auto y un objeto persona, no se puede llamar directamente.
-    // dice true o false si esa persona puede comprar ese auto
-    // lo que hace es primero chequear si el precio del auto esta por debajo de lo que la persona esta dispuesta a pagar
-    // despues se fija que las cuotas tambien esten por debajo de lo que la persona pagaria por cuota
-    // si y solo si ambas condiciones son true devuelve true, en otro caso devuelve false
-    return auto.precio <= persona.capacidadDePagoTotal  && auto.precio / auto.cuotas <= persona.capacidadDePagoEnCuotas
+  listaDeVentas: function () {
+    let autosVendidos = this.autos.filter((auto) => auto.vendido == true);
+    var ventas = [];
+    autosVendidos.forEach((auto) => {
+      const obj = {
+        nombre: auto.marca,
+        modelo: auto.modelo,
+        kilometros: auto.km,
+        precio: `$ ${auto.precio}`
+      }
+      ventas.push(obj);
+    });
+    ventas.length ? console.log('Autos vendidos: ', ventas) : console.log('Actualmente no hay autos en venta');
   },
 
-  autosQuePuedeComprar: function(persona){
-    // dada una persona este metodo trae todos los autos que esa persona puede pagar
-    let autosALaVenta = this.autosParaLaVenta();
-    let autosComprables = autosALaVenta.filter(function(auto){
+  totalDeVentas: function () {
+    const ventas = this.autos.filter((auto) => auto.vendido == true);
+    let subtotal = 0;
+    ventas.forEach(item => {
+      subtotal = subtotal + item.precio;
+    })
+    console.log('Total de ventas: $', subtotal)
+  },
+
+  puedeComprar: function (auto, persona) {
+    return (
+      auto.precio <= persona.capacidadDePagoTotal &&
+      auto.precio / auto.cuotas <= persona.capacidadDePagoEnCuotas
+    );
+  },
+
+  autosQuePuedeComprar: function (persona) {
+    let autosALaVenta = this.autos.filter((auto) => auto.vendido == false);
+    let autosComprables = autosALaVenta.filter(function (auto) {
       return concesionaria.puedeComprar(auto, persona);
     });
     return autosComprables;
-  }
-}
+  },
+};
 
 module.exports = concesionaria;
